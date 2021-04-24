@@ -1,0 +1,246 @@
+---
+title: "Gather Soccer Model"
+author: "Fahad Alkhaja"
+date: "4/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(StatsBombR)
+library(tidyverse)
+library(rstanarm)
+
+```
+
+```{r competitions}
+
+Comp <- FreeCompetitions() %>% 
+  filter(competition_id== 11, season_id== 26)
+  
+Matches <- FreeMatches(Comp) %>%
+  filter(home_team.home_team_name == "Barcelona" || 
+           away_team.away_team_name == "Barcelona")
+
+StatsBombData <- StatsBombFreeEvents(MatchesDF = Matches, Parallel = T) %>%
+  allclean()
+
+```
+
+
+```{r readin_sample_tracking_data}
+# After inspecting the data, I realized I had to skip two rows.
+# Sample_Game_1_RawTrackingData_Home_Team <- read_csv("sample_data/data/Sample_Game_1/Sample_Game_1_RawTrackingData_Home_Team.csv",
+#           skip = 2,
+#           col_types = cols(.default = col_double()))
+# 
+# Sample_Game_1_RawTrackingData_Away_Team <- read_csv("sample_data/data/Sample_Game_1/Sample_Game_1_RawTrackingData_Away_Team.csv",
+#           skip = 2,
+#           col_types = cols(.default = col_double()))
+
+```
+
+```{r get_ball_data}
+# The ball_data is included in both the home and away team tracking data
+# I simply had to select the final two rows of either the home or away team csv files
+ball_data <- Sample_Game_1_RawTrackingData_Home_Team %>%
+  select(Ball, X33)
+
+```
+
+```{r readin_raw_event_data}
+
+Sample_Game_1_RawEventsData <- read_csv("sample_data/data/Sample_Game_1/Sample_Game_1_RawEventsData.csv",
+          col_types = cols(Team = col_character(),
+                           Type = col_character(),
+                           Subtype = col_character(),
+                           Period = col_double(),
+                           `Start Frame` = col_double(),
+                           `Start Time [s]` = col_double(),
+                           `End Frame` = col_double(),
+                           `End Time [s]` = col_double(),
+                           From = col_character(),
+                           To = col_character(),
+                           `Start X` = col_double(),
+                           `Start Y` = col_double(),
+                           `End X` = col_double(),
+                           `End Y` = col_double() ))
+```
+
+```{r shots_goals}
+
+shots_goals <- StatsBombData %>%
+  group_by(team.name, match_id) %>%
+  filter(team.name == "Barcelona",
+         type.name == "Shot") %>%
+  summarise(shots = sum(type.name=="Shot",
+                        na.rm = TRUE),
+            goals = sum(shot.outcome.name=="Goal",
+                        na.rm = TRUE),
+            XG = sum(shot.statsbomb_xg,
+                     na.rm = TRUE),
+            .groups = "drop") %>%
+  select(shots, goals, XG)
+
+shots_goals_p90 <- StatsBombData %>%
+  group_by(team.name) %>%
+  filter(team.name == "Barcelona",
+         type.name == "Shot") %>% 
+  summarise(shots_p90 = sum(type.name=="Shot",
+                        na.rm =TRUE)/n_distinct(match_id),
+            goals_p90 = sum(shot.outcome.name=="Goal",
+                        na.rm =TRUE)/n_distinct(match_id),
+            XG_p90 = sum(shot.statsbomb_xg,
+                        na.rm =TRUE)/n_distinct(match_id),
+            .groups = "drop") %>% 
+  select(shots_p90, goals_p90, XG_p90)
+```
+
+```{r developing_model}
+
+newobs_1 <- tibble(shots = 1,
+                   XG = 1)
+
+fit_1 <-stan_glm(data = shots_goals,
+                 formula = goals ~ shots + XG,
+                 family = gaussian,
+                 seed = 25,
+                 refresh = 0)
+
+newobs_2 <- tibble(shots = 1)
+
+fit_2 <-stan_glm(data = shots_goals,
+                 formula = goals ~ shots,
+                 family = gaussian,
+                 seed = 25,
+                 refresh = 0)
+
+newobs_3 <- tibble(XG = 1)
+
+fit_3 <-stan_glm(data = shots_goals,
+                 formula = goals ~ XG,
+                 family = gaussian,
+                 seed = 25,
+                 refresh = 0)
+#fit_3
+
+newobs_4<- tibble(shots = 1,
+                  XG = 1)
+
+fit_4 <-stan_glm(data = shots_goals,
+                 formula = goals ~ (shots*XG),
+                 family = gaussian,
+                 seed = 25,
+                 refresh = 0)
+
+posterior_epred(fit_4, newobs_4) %>%
+  as_tibble() %>%
+  filter(`1` >0)
+
+```
+
+```{r posterior_epreds}
+
+fit_1_tibble <-posterior_epred(fit_1,
+                             newobs_1) %>%
+  as_tibble() %>%
+  filter(`1` >0) %>%
+  mutate_all(as.numeric)
+
+  
+fit_2_tibble <-posterior_epred(fit_2,
+                             newobs_2) %>%
+  as_tibble() %>%
+  filter(`1` >0) %>%
+  mutate_all(as.numeric)
+
+fit_3_tibble <-posterior_epred(fit_3,
+                             newobs_3) %>%
+  as_tibble() %>%
+  filter(`1` >0) %>%
+  mutate_all(as.numeric)
+
+fit_4_tibble <-posterior_epred(fit_4,
+                             newobs_4) %>%
+  as_tibble() %>%
+  filter(`1` >0) %>%
+  mutate_all(as.numeric)
+
+```
+
+```{r models}
+fit_1_plot <- fit_1_tibble %>%
+  ggplot(aes(x = `1`)) +
+  geom_histogram(bins = 100,
+                 aes(y = after_stat(count/sum(count)))) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_x_continuous(labels = scales::number_format(accuracy = .001)) +
+  theme_classic() +
+  labs(title = "Posterior for Number of Goals Scored",
+       subtitle = "Estimated posterior using xG and # of Shots",
+       x = "Goals",
+       y = "Probability",
+       caption = "Source: StatsBomb")
+
+fit_2_plot <- fit_2_tibble %>%
+  ggplot(aes(x = `1`)) +
+  geom_histogram(bins = 100,
+                 aes(y = after_stat(count/sum(count)))) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_x_continuous(labels = scales::number_format(accuracy = .001)) +
+  theme_classic() +
+  labs(title = "Posterior for Number of Goals Scored",
+       subtitle = "Estimated posterior using # of Shots",
+       x = "Goals",
+       y = "Probability",
+       caption = "Source: StatsBomb")
+
+fit_3_plot <- fit_3_tibble %>%
+  ggplot(aes(x = `1`)) +
+  geom_histogram(bins = 100,
+                 aes(y = after_stat(count/sum(count)))) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_x_continuous(labels = scales::number_format(accuracy = .001)) +
+  theme_classic() +
+  labs(title = "Posterior for Number of Goals Scored",
+       subtitle = "Estimated posterior using xG",
+       x = "Goals",
+       y = "Probability",
+       caption = "Source: StatsBomb")
+# fit_1_plot
+
+fit_4_plot <- fit_4_tibble %>%
+  ggplot(aes(x = `1`)) +
+  geom_histogram(bins = 100,
+                 aes(y = after_stat(count/sum(count)))) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_x_continuous(labels = scales::number_format(accuracy = .001)) +
+  theme_classic() +
+  labs(title = "Posterior for Number of Goals Scored",
+       subtitle = "Estimated posterior using (xG* #of shots)",
+       x = "Goals",
+       y = "Probability",
+       caption = "Source: StatsBomb")
+```
+
+```{r saveImageofPlots}
+
+ ggsave("soccer_model/fit_1_plot.jpg", fit_1_plot)
+ ggsave("soccer_model/fit_2_plot.jpg", fit_2_plot)
+ ggsave("soccer_model/fit_3_plot.jpg", fit_3_plot)
+ ggsave("soccer_model/fit_4_plot.jpg", fit_4_plot)
+
+```
+
+```{r saveRDS}
+# Uncomment so we dont keep overwriting.
+
+ gather <- Sample_Game_1_RawEventsData
+
+ saveRDS(fit_1_tibble, "soccer_model/fit_1.RDS")
+ saveRDS(fit_2_tibble, "soccer_model/fit_2.RDS")
+ saveRDS(fit_3_tibble, "soccer_model/fit_3.RDS")
+ saveRDS(fit_4_tibble, "soccer_model/fit_4.RDS")
+ saveRDS(gather, "soccer_model/gather.RDS")
+```
+
