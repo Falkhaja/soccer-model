@@ -10,7 +10,8 @@ knitr::opts_chunk$set(echo = FALSE)
 library(StatsBombR)
 library(tidyverse)
 library(rstanarm)
-
+library(gt)
+library(gtsummary)
 ```
 
 ```{r competitions}
@@ -151,7 +152,6 @@ fit_1_tibble <-posterior_epred(fit_1,
   filter(`1` >0) %>%
   mutate_all(as.numeric)
 
-  
 fit_2_tibble <-posterior_epred(fit_2,
                              newobs_2) %>%
   as_tibble() %>%
@@ -247,4 +247,55 @@ fit_4_plot <- fit_4_tibble %>%
  saveRDS(fit_4_tibble, "soccer_model/fit_4.RDS")
  saveRDS(gather, "soccer_model/gather.RDS")
 ```
+
+```{r regression_tables}
+fit_1_gt <- tbl_regression(fit_1, 
+               intercept = TRUE, 
+               estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
+  
+  # Using Beta as the name of the parameter column is weird.
+  
+  as_gt() %>% 
+  tab_header(title = md("**Number of Goals Likely Scored in a Game**"),
+             subtitle = "How xG and Shot Count Predict Likelihood of Scoring") %>%
+  tab_source_note(md("Source: StatsBomb")) %>% 
+  cols_label(estimate = md("**Parameter**"))
+
+fit_2_gt <- tbl_regression(fit_2, 
+               intercept = TRUE, 
+               estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
+  
+  as_gt() %>% 
+  tab_header(title = md("**Number of Goals Likely Scored in a Game**"),
+             subtitle = "How Shot Count Predicts Likelihood of Scoring") %>%
+  tab_source_note(md("Source: StatsBomb")) %>% 
+  cols_label(estimate = md("**Parameter**"))
+
+fit_3_gt <- tbl_regression(fit_3, 
+               intercept = TRUE, 
+               estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
+  
+  as_gt() %>% 
+  tab_header(title = md("**Number of Goals Likely Scored in a Game**"),
+             subtitle = "How xG Predicts Likelihood of Scoring") %>%
+  tab_source_note(md("Source: StatsBomb")) %>% 
+  cols_label(estimate = md("**Parameter**"))
+
+fit_4_gt <- tbl_regression(fit_4, 
+               intercept = TRUE, 
+               estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
+  
+  as_gt() %>% 
+  tab_header(title = md("**Number of Goals Likely Scored in a Game**"),
+             subtitle = "How xG, Shot Count, & Their Interaction Predict Likelihood of Scoring") %>%
+  tab_source_note(md("Source: StatsBomb")) %>% 
+  cols_label(estimate = md("**Parameter**"))
+
+ saveRDS(fit_1_gt, "soccer_model/fit_1_gt.RDS")
+ saveRDS(fit_2_gt, "soccer_model/fit_2_gt.RDS")
+ saveRDS(fit_3_gt, "soccer_model/fit_3_gt.RDS")
+ saveRDS(fit_4_gt, "soccer_model/fit_4_gt.RDS")
+
+```
+
 

@@ -9,6 +9,8 @@
 
 library(shiny)
 library(tidyverse)
+library(shinythemes)
+library(gt)
 
 
 #source(file = "soccer_model/fit4.R")
@@ -18,6 +20,15 @@ fit_1_RDS <-readRDS("fit_1.RDS")
 fit_2_RDS <-readRDS("fit_2.RDS")
 fit_3_RDS <-readRDS("fit_3.RDS")
 fit_4_RDS <-readRDS("fit_4.RDS")
+
+fit_1_gt <-readRDS("fit_1_gt.RDS")
+fit_2_gt <-readRDS("fit_2_gt.RDS")
+fit_3_gt <-readRDS("fit_3_gt.RDS")
+fit_4_gt <-readRDS("fit_4_gt.RDS")
+
+fit_model_PLtable <-readRDS("fit_model_PLtable.RDS")
+
+final_gt_modeltable <-readRDS("final_gt_model_table.RDS")
 
 # Define UI for application that draws a barplot
 ui <- navbarPage(
@@ -36,9 +47,13 @@ ui <- navbarPage(
                          )),
                      mainPanel(plotOutput("events_plot")))),
              p("The plot above shows the number of each type of event recorded 
-             for a soccer game between a Home and an Away Team."),
+             for a soccer game between a Home and an Away Team. This data has
+             the potential to be very informative as it can give an in depth
+             overview of the events and actions taking place in a soccer game.
+             This in turn allows analysts to contextualize and understand better
+             the performance of their team."),
     ),
-    tabPanel("E(xG)pected Goals Case Study: Barcelona", 
+    tabPanel("E(xG)pected Goals Model Study: Barcelona", 
              fluidPage(
                  titlePanel("Fitting A Model to Data"),
                  sidebarLayout(
@@ -46,16 +61,48 @@ ui <- navbarPage(
                          selectInput(
                              "model_type",
                              "Pick Model",
-                             c("Shots" = "Shots Only", "xG & Shots" = "xG + Shots")
+                             c("Shots" = "Shots Only",
+                               "xG" = "xG Only",
+                               "xG & Shots" = "xG + Shots",
+                               "xG & Shots Interaction" = "xG * Shots")
                          )),
                      mainPanel(plotOutput("model_plot")))),
+             h2("Model Table and Analysis"),
+             gt_output("table1"),
+    
              p("The regression model here, shown as a histogram, outputs the
              expected number of goals scored per game by the Barcelona team in
              the La Liga competition in the 2014/15 season."),
              p("The data here was collected and compiled from all 38 games,
              19 home and 19 away, that Barcelona played in during the 2014/15 
-             season. This is merely an example of the type of model that can be
-             made for other teams."),
+             season. This is an example of the type of model that can be
+             made for other teams and estimates the likelihood of number of
+             goals scored given the xG and number of shots in a game."),
+    ),
+    tabPanel("E(x)pected Points Model Study: Premier League 19/20", 
+             fluidPage(
+                 titlePanel("Points Model Estimation"),
+                 gt_output("tablePL")),
+             h3("xPts Discussion"),
+             p("The above table shows two alternative realities, or different 
+               modelling outcomes. The xPts outcome is based on comparing the
+               collected xG in a certain game and determining a winner based off
+               of which team had a higher registered xG. The xG winner of a game
+               receives 3 points, while the loser gets none. If the xG values
+               are equal for both teams then they both get an xPts of 1.
+               This process was repeated for all 38 games for each team, and the
+               results were summarized in the table above."),
+             
+             h2("Model Table and Analysis"),
+             gt_output("tablePLmodel"),
+             
+
+             p("This regression table shows the Model-xPts based on 3 parameters:
+               Team, Location game is being played (Home/Away), and xPts/game of
+               each team. Here Arsenal for the Teams parameter and Away for the
+               Home/Away parameter are the default values embedded in intercept,
+               hence why they have blank values. The rest of the paramter values
+               are based off of it."),
     ),
     tabPanel("About", 
              titlePanel("About"),
@@ -71,7 +118,10 @@ ui <- navbarPage(
              h4("StatsBomb"),
              p("Whether via the StatsBomb package API directly or the FBref
                website, which summarizes and organizes data in detailed and easy
-               to export tables."),
+               to export tables, the data provided by Statsbomb is very detailed
+               and wholesome, specifically their xG values, with them being
+               recognized as having the most advanced and accurate model in the
+               industry.."),
              h4("Metrica Sports"),
              p("Metrica Sports recently released proprietary player events and
                corresponding tracking data. These events, in a simple format,
@@ -125,31 +175,44 @@ server <- function(input, output) {
         } else if (input$model_type == "xG + Shots") {
             fit <- fit_1_RDS %>%
                 pull(`1`)
+        } else if (input$model_type == "xG Only") {
+            fit <- fit_3_RDS %>%
+                pull(`1`)
+        } else {
+            fit <- fit_4_RDS %>%
+                pull(`1`)
         }
-        # } else if (test_expression3) {
-        #     statement3
-        # } else {
-        #     statement4
-        # }
-        # ifelse(
-        #     input$model_type == "Shots Only",
-        #     
-        #     # If input$plot_type is "Shots Only", we want fit_2
-        #     fit <- fit_2_RDS %>%
-        #         pull(`1`),
-        #     
-        #     # If input$plot_type is "xG + Shots", we want fit_1
-        #     fit <- fit_1_RDS %>%
-        #         pull(`1`)
-        #     
-        # )
-        
+
         # Draw the histogram for the specified model
         
         hist(fit, col = 'darkgray', border = 'white',
              freq = FALSE , breaks = 100,
-             main = "Posterior Distribution for Goals scored in a Soccer Game",
-             xlab = "Number of Goals", ylab = "Probability")
+             main = "Posterior Distribution for Estimated Goals Scored in a Soccer Game",
+             xlab = "Number of Goals", ylab = "Probability (%)")
+    })
+    
+    output$table1 <- render_gt({
+        if (input$model_type == "Shots Only") {
+            gt_table <- fit_2_gt 
+        } else if (input$model_type == "xG + Shots") {
+            gt_table <- fit_1_gt 
+        } else if (input$model_type == "xG Only") {
+            gt_table <- fit_3_gt 
+        } else {
+            gt_table <- fit_4_gt 
+        }
+        
+        gt_table
+    })
+    
+    output$tablePL <- render_gt({
+        
+        final_gt_modeltable
+        
+    })
+    
+    output$tablePLmodel <- render_gt({
+        fit_model_PLtable
     })
 }
 # Run the application 
