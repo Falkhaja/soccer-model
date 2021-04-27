@@ -14,7 +14,11 @@ library(gt)
 library(gtsummary)
 ```
 
-```{r competitions}
+```{r competitions, warning=FALSE}
+
+# This section reads in competitions and matches data from the StatsBomb API.
+# The Barcelona 2014/15 had the greatest amount of data available so that's why\
+# it was selected.
 
 Comp <- FreeCompetitions() %>% 
   filter(competition_id== 11, season_id== 26)
@@ -44,6 +48,7 @@ StatsBombData <- StatsBombFreeEvents(MatchesDF = Matches, Parallel = T) %>%
 ```{r get_ball_data}
 # The ball_data is included in both the home and away team tracking data
 # I simply had to select the final two rows of either the home or away team csv files
+
 ball_data <- Sample_Game_1_RawTrackingData_Home_Team %>%
   select(Ball, X33)
 
@@ -104,6 +109,10 @@ avg_xG_p90 <- shots_goals_p90 %>%
 ```
 
 ```{r developing_model}
+
+# Here many newobs and fit models were made testing different fit models. These
+# are all different options for representing and estimating the number of goals
+# per game, in this case of using Barcelona in the 14/15 La Liga season.
 
 newobs_1 <- tibble(shots = avg_shots_p90,
                    XG = avg_xG_p90)

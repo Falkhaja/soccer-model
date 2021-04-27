@@ -11,6 +11,7 @@ library(shiny)
 library(tidyverse)
 library(shinythemes)
 library(gt)
+library(gtsummary)
 
 
 #source(file = "soccer_model/fit4.R")
