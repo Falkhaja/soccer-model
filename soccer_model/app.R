@@ -119,18 +119,30 @@ server <- function(input, output) {
     output$model_plot <- renderPlot({
         # Generate type based on input$plot_type from ui
         
-        ifelse(
-            input$model_type == "Shots Only",
-            
-            # If input$plot_type is "Shots Only", we want fit_2
+        if (input$model_type == "Shots Only") {
             fit <- fit_2_RDS %>%
-                pull(`1`),
-            
-            # If input$plot_type is "xG + Shots", we want fit_1
+                pull(`1`)
+        } else if (input$model_type == "xG + Shots") {
             fit <- fit_1_RDS %>%
                 pull(`1`)
-            
-        )
+        }
+        # } else if (test_expression3) {
+        #     statement3
+        # } else {
+        #     statement4
+        # }
+        # ifelse(
+        #     input$model_type == "Shots Only",
+        #     
+        #     # If input$plot_type is "Shots Only", we want fit_2
+        #     fit <- fit_2_RDS %>%
+        #         pull(`1`),
+        #     
+        #     # If input$plot_type is "xG + Shots", we want fit_1
+        #     fit <- fit_1_RDS %>%
+        #         pull(`1`)
+        #     
+        # )
         
         # Draw the histogram for the specified model
         
