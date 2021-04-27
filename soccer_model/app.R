@@ -10,6 +10,7 @@
 library(shiny)
 library(tidyverse)
 
+
 #source(file = "soccer_model/fit4.R")
 gather_RDS <-readRDS("gather.RDS")
 
@@ -20,27 +21,8 @@ fit_4_RDS <-readRDS("fit_4.RDS")
 
 # Define UI for application that draws a barplot
 ui <- navbarPage(
-    "Soccer Data Science Final Project",
-    tabPanel("Discussion",
-             titlePanel("Data Sources Discussion"),
-             h3("Data Source 1: StatsBomb"),
-             p("This is the data source I will be using that has all events 
-               data. It has data about competitions, lineups, events (passes,
-               shots, tackles, dribbles) and any in match event data. It is yet
-               to be determined whether I will need to pay or find some other 
-               way to  access the full dataset by obtaining an API."),
-             h3("Data Source 2: Metrica Sports"),
-             p("This is the data source I will be using that contains position 
-               and tracking data of players. The goal currently in my mind 
-               for my final project is to emphasize and categorize players into 
-               different 'role players'. For that goal, tracking data becomes 
-               increasingly important as soccers' players movement and starting 
-               position with respect and with or without the ball becomes as 
-               paramount as the actions they complete with it that will be 
-               recorded in the Statsbomb events dataset. Wyscout also has some 
-               interesting data that I could leverage if I'm going to end up 
-               getting an API.")),
-    tabPanel("Manipulation", 
+    "Managing Expectations: xSoccer Data",
+    tabPanel("Player Tracking and Events", 
              fluidPage(
                  titlePanel("Game Events Bar Plot"),
                  sidebarLayout(
@@ -56,7 +38,7 @@ ui <- navbarPage(
              p("The plot above shows the number of each type of event recorded 
              for a soccer game between a Home and an Away Team."),
     ),
-    tabPanel("Model", 
+    tabPanel("E(xG)pected Goals Case Study: Barcelona", 
              fluidPage(
                  titlePanel("Fitting A Model to Data"),
                  sidebarLayout(
@@ -67,27 +49,41 @@ ui <- navbarPage(
                              c("Shots" = "Shots Only", "xG & Shots" = "xG + Shots")
                          )),
                      mainPanel(plotOutput("model_plot")))),
-             p("The model here is one for number of goals scored based on two 
-             possible inputs: xG and shots taken. This data was taken from all 
-             38 games Barcelona Men's team played in La Liga in the 2014/15 
-             season."),
+             p("The regression model here, shown as a histogram, outputs the
+             expected number of goals scored per game by the Barcelona team in
+             the La Liga competition in the 2014/15 season."),
+             p("The data here was collected and compiled from all 38 games,
+             19 home and 19 away, that Barcelona played in during the 2014/15 
+             season. This is merely an example of the type of model that can be
+             made for other teams."),
     ),
     tabPanel("About", 
              titlePanel("About"),
              h3("Project Background and Motivations"),
-             p("Hello, this is where I talk about my project. I have not completely
-             nailed down what I will be doing for my project. However, I would 
-             like to use event and tracking data to allow an outsider to be able
-             to search the game and visualize what happened. For example, if
-             somebody is interested in goals scored. I would make it such that
-             you can filter for such an event and specify the time before the 
-             goal was scored and visualize the player and ball movements according
-             to the tracking data available."),
+             p("I have long been infatutaed with soccer and watching and playing
+               the game. In recent times, especially after the movie Moneyball,
+               data analytics has been making great advances and strides in the
+               soccer world. As an aspiring statistician and data scientist and
+               more importantly an avid fan, soccer analytics has thus become 
+               central to my enjoying and understanding of the different nuances
+               of the game."),
+             h3("Data Sources"),
+             h4("StatsBomb"),
+             p("Whether via the StatsBomb package API directly or the FBref
+               website, which summarizes and organizes data in detailed and easy
+               to export tables."),
+             h4("Metrica Sports"),
+             p("Metrica Sports recently released proprietary player events and
+               corresponding tracking data. These events, in a simple format,
+               filtered by Home and Away Team, are shown here to showcase the
+               number for each of the different events."),
              h3("About Me"),
-             p("My name is Fahad Alkhaja and I study Mechanical Engineering. 
-             You can reach me at falkhaja@college.harvard.edu."),
+             p("My name is Fahad Alkhaja and I am a graduating senior from
+             Harvard College with a BS in Mechanical Engineering 2021. I will be
+             pursuing a MA in Statistics at Columbia's GSAS.
+             You can reach me at fhd.alkhaja@gmail.com."),
              h3("Repo URL"),
-             p("https://github.com/Falkhaja/milestone4_finalproj_Gov_1005.git")))
+             p("https://github.com/Falkhaja/soccer-model.git")))
 
 # Define server logic
 server <- function(input, output) {

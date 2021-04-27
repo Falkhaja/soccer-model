@@ -11,3 +11,126 @@ library(tidyverse)
 library(rstanarm)
 ```
 
+```{r}
+EPL_Results_18_19 <- read_csv("FBRef_Data/EPL_Results_18:19.csv",
+                              col_types = cols(
+                                Wk = col_double(),
+                                Day = col_character(),
+                                Date = col_character(),
+                                Time = col_character(),
+                                Home = col_character(),
+                                xGHome = col_double(),
+                                `Home Goals Scored` = col_double(),
+                                `Away Goals Scored` = col_double(),
+                                xGAway = col_double(),
+                                Away = col_character(),
+                                Attendance = col_number(),
+                                Venue = col_character(),
+                                Referee = col_character(),
+                                `Match Report` = col_character(),
+                                Notes = col_logical() ))
+```
+
+
+```{r}
+EPL_LeagueTable_18_19 <- read_csv("FBRef_Data/EPL_LeagueTable_18:19.csv",
+                                  col_types = cols(
+                                    Rk = col_double(),
+                                    Squad = col_character(),
+                                    MP = col_double(),
+                                    W = col_double(),
+                                    D = col_double(),
+                                    L = col_double(),
+                                    GF = col_double(),
+                                    GA = col_double(),
+                                    GD = col_double(),
+                                    Pts = col_double(),
+                                    xG = col_double(),
+                                    xGA = col_double(),
+                                    xGD = col_double(),
+                                    `xGD/90` = col_double(),
+                                    Attendance = col_number(),
+                                    `Top Team Scorer` = col_character(),
+                                    Goalkeeper = col_character(),
+                                    Notes = col_character() ))
+
+```
+
+```{r}
+epl_results <- EPL_Results_18_19 %>%
+  select(Home:Away) %>% drop_na()
+
+HA_epl_results <- epl_results %>%
+  mutate(PtsHome = if_else(`Home Goals Scored` - `Away Goals Scored` > 0,
+                           3,
+                           if_else(`Away Goals Scored` - `Home Goals Scored` > 0,
+                                   0, 1))) %>%
+  mutate(PtsAway = if_else(PtsHome == 3, 0, if_else(PtsHome == 1, 1, 3))) %>%
+  mutate(xPtsHome = if_else(xGHome - xGAway > 0,
+                            3,
+                            if_else(xGAway - xGHome > 0, 0, 1))) %>%
+  mutate(xPtsAway = if_else(xPtsHome == 3, 0, if_else(xPtsHome == 1, 1, 3)))
+
+epl_results_proper_form <- HA_epl_results %>% 
+  pivot_longer(cols = c("Home", "Away"),
+               names_to = "Home/Away",
+               values_to = "Team") %>%
+  mutate(xG = if_else(`Home/Away` == "Home", xGHome, xGAway),
+         Goals_Scored = if_else(`Home/Away` == "Home",
+                                `Home Goals Scored`, `Away Goals Scored`),
+         Pts = if_else(`Home/Away` == "Home", PtsHome, PtsAway),
+         xPts = if_else(`Home/Away` == "Home", xPtsHome, xPtsAway)) %>% 
+  select(`Home/Away`:xPts) %>%
+  group_by(Team)
+  
+  
+arranged_stuff_all <- epl_results_proper_form %>%
+  summarize(results_xG = sum(xG),
+            results_Goals_Scored = sum(Goals_Scored),
+            results_Pts = sum(Pts),
+            results_xPts = sum(xPts),
+            .groups = "drop") %>%
+  mutate(results_xPts_Pts_Difference = results_Pts - results_xPts) %>% 
+  arrange(desc(results_Pts))
+
+arranged_stuff_specific <- arranged_stuff_all  %>%
+  select(Team, results_Pts, results_xPts) %>%
+  mutate(Team_Pts = Team,
+         Team_xPts = Team) %>%
+  select(Team_xPts,Team_Pts, results_Pts, results_xPts)
+
+# arranged_xPts <- arranged_Pts %>%
+#   arrange(desc(results_xPts))
+
+arranged_Pts <- arranged_stuff_specific %>%
+  arrange(desc(results_Pts)) %>%
+  select(Team_Pts, results_Pts)
+# arranged_Pts
+arranged_xPts <- arranged_stuff %>%
+  arrange(desc(results_xPts)) %>%
+  select(Team_xPts, results_xPts)
+# arranged_xPts
+
+joined_xPts_Pts <- tibble(
+  League_Position = 1:20,
+  Actual_Table = arranged_Pts$Team_Pts,
+  Pts = arranged_Pts$results_Pts,
+  Actual_xPts_Table = arranged_xPts$Team_xPts,
+  xPts = arranged_xPts$results_xPts,
+  xLeague_Position = 1:20)
+
+joined_xPts_Pts
+
+# joined_xPts_Pts %>%
+#   compare.list(Actual_Table, Actual_xPts_Table)
+#   group_by(Actual_Table, Actual_xPts_Table) 
+#   summarise(diff_league_position =League_Position - xeague_Position)
+
+# diff_league_position = league_position - xleague_Position
+   # model xPts ~ xG + Home/Away + Interaction
+  
+  # pivot_longer
+  # cols left to right: team, home/away xG, Goals Scored, Pts, xPts
+
+```
+

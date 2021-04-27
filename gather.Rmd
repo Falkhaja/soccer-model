@@ -94,12 +94,18 @@ shots_goals_p90 <- StatsBombData %>%
                         na.rm =TRUE)/n_distinct(match_id),
             .groups = "drop") %>% 
   select(shots_p90, goals_p90, XG_p90)
+
+avg_shots_p90 <- shots_goals_p90 %>%
+  pull(shots_p90)
+
+avg_xG_p90 <- shots_goals_p90 %>%
+  pull(XG_p90)
 ```
 
 ```{r developing_model}
 
-newobs_1 <- tibble(shots = 1,
-                   XG = 1)
+newobs_1 <- tibble(shots = avg_shots_p90,
+                   XG = avg_xG_p90)
 
 fit_1 <-stan_glm(data = shots_goals,
                  formula = goals ~ shots + XG,
@@ -107,7 +113,7 @@ fit_1 <-stan_glm(data = shots_goals,
                  seed = 25,
                  refresh = 0)
 
-newobs_2 <- tibble(shots = 1)
+newobs_2 <- tibble(shots = avg_shots_p90)
 
 fit_2 <-stan_glm(data = shots_goals,
                  formula = goals ~ shots,
@@ -115,7 +121,7 @@ fit_2 <-stan_glm(data = shots_goals,
                  seed = 25,
                  refresh = 0)
 
-newobs_3 <- tibble(XG = 1)
+newobs_3 <- tibble(XG = avg_xG_p90)
 
 fit_3 <-stan_glm(data = shots_goals,
                  formula = goals ~ XG,
@@ -124,8 +130,8 @@ fit_3 <-stan_glm(data = shots_goals,
                  refresh = 0)
 #fit_3
 
-newobs_4<- tibble(shots = 1,
-                  XG = 1)
+newobs_4<- tibble(shots = avg_shots_p90,
+                  XG = avg_xG_p90)
 
 fit_4 <-stan_glm(data = shots_goals,
                  formula = goals ~ (shots*XG),
@@ -133,9 +139,7 @@ fit_4 <-stan_glm(data = shots_goals,
                  seed = 25,
                  refresh = 0)
 
-posterior_epred(fit_4, newobs_4) %>%
-  as_tibble() %>%
-  filter(`1` >0)
+
 
 ```
 
