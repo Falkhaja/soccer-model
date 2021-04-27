@@ -11,7 +11,7 @@ library(tidyverse)
 library(rstanarm)
 ```
 
-```{r}
+```{r load_EPL_fixtures_results_table}
 EPL_Results_18_19 <- read_csv("FBRef_Data/EPL_Results_18:19.csv",
                               col_types = cols(
                                 Wk = col_double(),
@@ -32,7 +32,7 @@ EPL_Results_18_19 <- read_csv("FBRef_Data/EPL_Results_18:19.csv",
 ```
 
 
-```{r}
+```{r load_EPL_end_of_league_table}
 EPL_LeagueTable_18_19 <- read_csv("FBRef_Data/EPL_LeagueTable_18:19.csv",
                                   col_types = cols(
                                     Rk = col_double(),
