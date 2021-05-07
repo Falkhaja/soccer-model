@@ -172,10 +172,6 @@ server <- function(input, output) {
                  caption = "Source: Metrica Tracking") +
             theme(legend.position = "none")
         
-        # barplot(height = pull(x), names.arg = x$Type, horiz = FALSE,
-        #         col = 'darkgray',
-        #         border = 'black',
-        #         main = "Team Event Data", cex.names = .75)
     })
     
     output$model_plot <- renderPlot({
