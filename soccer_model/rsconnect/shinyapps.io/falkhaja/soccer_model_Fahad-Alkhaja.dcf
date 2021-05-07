@@ -5,9 +5,9 @@ account: falkhaja
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4026050
-bundleId: 4526877
+bundleId: 4572297
 url: https://falkhaja.shinyapps.io/soccer_model_Fahad-Alkhaja/
-when: 1619556473.81978
+when: 1620430481.22552
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: fit4.R
