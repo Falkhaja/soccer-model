@@ -250,11 +250,13 @@ fit_4_plot <- fit_4_tibble %>%
 
  gather <- Sample_Game_1_RawEventsData
 
- saveRDS(fit_1_tibble, "soccer_model/fit_1.RDS")
- saveRDS(fit_2_tibble, "soccer_model/fit_2.RDS")
- saveRDS(fit_3_tibble, "soccer_model/fit_3.RDS")
- saveRDS(fit_4_tibble, "soccer_model/fit_4.RDS")
- saveRDS(gather, "soccer_model/gather.RDS")
+
+
+ # saveRDS(fit_1_tibble, "soccer_model/fit_1.RDS")
+ # saveRDS(fit_2_tibble, "soccer_model/fit_2.RDS")
+ # saveRDS(fit_3_tibble, "soccer_model/fit_3.RDS")
+ # saveRDS(fit_4_tibble, "soccer_model/fit_4.RDS")
+ # saveRDS(gather, "soccer_model/gather.RDS")
 ```
 
 ```{r regression_tables}
@@ -300,10 +302,10 @@ fit_4_gt <- tbl_regression(fit_4,
   tab_source_note(md("Source: StatsBomb")) %>% 
   cols_label(estimate = md("**Parameter**"))
 
- saveRDS(fit_1_gt, "soccer_model/fit_1_gt.RDS")
- saveRDS(fit_2_gt, "soccer_model/fit_2_gt.RDS")
- saveRDS(fit_3_gt, "soccer_model/fit_3_gt.RDS")
- saveRDS(fit_4_gt, "soccer_model/fit_4_gt.RDS")
+ # saveRDS(fit_1_gt, "soccer_model/fit_1_Barcelona_gt.RDS")
+ # saveRDS(fit_2_gt, "soccer_model/fit_2_Barcelona_gt.RDS")
+ # saveRDS(fit_3_gt, "soccer_model/fit_3_Barcelona_gt.RDS")
+ # saveRDS(fit_4_gt, "soccer_model/fit_4_Barcelona_gt.RDS")
 
 ```
 

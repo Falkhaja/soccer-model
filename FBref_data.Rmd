@@ -85,8 +85,11 @@ epl_results_proper_form <- HA_epl_results %>%
                names_to = "Home/Away",
                values_to = "Team") %>%
   mutate(xG = if_else(`Home/Away` == "Home", xGHome, xGAway),
+         xG_Against = if_else(`Home/Away` == "Home", xGAway, xGHome),
          Goals_Scored = if_else(`Home/Away` == "Home",
                                 `Home Goals Scored`, `Away Goals Scored`),
+         Goals_Conceded = if_else(`Home/Away` == "Home",
+                                  `Away Goals Scored`, `Home Goals Scored`),
          Pts = if_else(`Home/Away` == "Home", PtsHome, PtsAway),
          xPts = if_else(`Home/Away` == "Home", xPtsHome, xPtsAway)) %>% 
   select(`Home/Away`:xPts) %>%
@@ -97,30 +100,48 @@ epl_results_proper_form <- HA_epl_results %>%
 
 arranged_stuff_all <- epl_results_proper_form %>%
   summarize(results_xG = sum(xG),
+            results_xG_Against = sum(xG_Against),
             results_Goals_Scored = sum(Goals_Scored),
+            results_Goals_Conceded = sum(Goals_Conceded),
             results_Pts = sum(Pts),
             results_xPts = sum(xPts),
             .groups = "drop") %>%
+  mutate(results_GD = results_Goals_Scored - results_Goals_Conceded) %>% 
+  mutate(results_xGD = results_xG - results_xG_Against) %>% 
   mutate(results_xPts_Pts_Difference = results_Pts - results_xPts) %>% 
-  arrange(desc(results_Pts))
+  
+  # In order to account for teams that have the same number of points, a
+  # tiebreaker is used. In this specific competition, the tiebreaker is Goal
+  # Difference (GD). The Team with the Higher Goal Difference is awarded the
+  # higher place. If GD is the same then a H2H or Head to Head record between
+  # the teams has to be examined. This case is not looked at because there are
+  # no cases of GD and Pts being the same for any team.
+  
+  arrange(-results_Pts, -results_GD)
 
 arranged_stuff_specific <- arranged_stuff_all  %>%
-  select(Team, results_Pts, results_xPts) %>%
+  select(Team, results_Pts, results_xPts, results_GD, results_xGD) %>%
+  
+  # The following is a way to generate two columns of team names to be 
   mutate(Team_Pts = Team,
          Team_xPts = Team) %>%
-  select(Team_xPts,Team_Pts, results_Pts, results_xPts)
+  select(Team_xPts,Team_Pts, results_Pts, results_xPts, results_GD, results_xGD)
 
 # arranged_xPts <- arranged_Pts %>%
 #   arrange(desc(results_xPts))
 
 arranged_Pts <- arranged_stuff_specific %>%
-  arrange(desc(results_Pts)) %>%
+  arrange(-results_Pts, -results_GD) %>%
   select(Team_Pts, results_Pts)
-# arranged_Pts
-arranged_xPts <- arranged_stuff %>%
-  arrange(desc(results_xPts)) %>%
+
+
+arranged_xPts <- arranged_stuff_specific %>%
+  
+  # Since the tiebreaker is GD for Pts, it is only fair to use xGD as the
+  # tiebreaker for xPts table.
+  
+  arrange(-results_xPts, -results_xGD) %>%
   select(Team_xPts, results_xPts)
-# arranged_xPts
 
 ```
 
@@ -162,19 +183,20 @@ newfit_epl_results_pivoted_summary <- newfit_epl_results_pivoted %>%
             xPts = round(mean(xPts), 3),
             GD = round(mean(GD), 3),
             xGD = round(mean(xGD), 3),
-            `GD-xGD` = round(mean(`GD-xGD`), 3))
+            `GD-xGD` = round(mean(`GD-xGD`), 3),
+            .groups = "drop")
 ```
 
 
 ```{r new_fit}
-fit_1 <- stan_glm(data = newfit_epl_results_pivoted,
+fit_1_PL <- stan_glm(data = newfit_epl_results_pivoted,
                  formula = Pts ~  Team + `Home/Away` + xGD + `GD-xGD` + xPts + Team*`Home/Away`,
                  family = gaussian,
                  seed = 25,
                  refresh = 0)
 
  
- fit1_gt <- tbl_regression(fit_1, 
+ fit1_gt <- tbl_regression(fit_1_PL, 
                intercept = TRUE, 
                estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
   as_gt() %>% 
@@ -183,14 +205,16 @@ fit_1 <- stan_glm(data = newfit_epl_results_pivoted,
   tab_source_note(md("Source: FBRef via StatsBomb")) %>% 
   cols_label(estimate = md("**Parameter**"))
  
- fit_2 <- stan_glm(data = newfit_epl_results_pivoted,
+
+ 
+ fit_2_PL <- stan_glm(data = newfit_epl_results_pivoted,
                  formula = Pts ~  Team + `Home/Away`+ xPts,
                  family = gaussian,
                  seed = 25,
                  refresh = 0)
 
   
-  fit_model_PLtable <- tbl_regression(fit_2, 
+  fit_model_PLtable <- tbl_regression(fit_2_PL, 
                intercept = TRUE, 
                estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
   
@@ -201,7 +225,7 @@ fit_1 <- stan_glm(data = newfit_epl_results_pivoted,
   tab_source_note(md("Source: FBRef via StatsBomb")) %>% 
   cols_label(estimate = md("**Parameter**"))
   
-  saveRDS(fit_model_PLtable, "soccer_model/fit_model_PLtable.RDS")
+  # saveRDS(fit_model_PLtable, "soccer_model/fit_model_PLtable.RDS")
 
   # Here I had to manually look at the fit outputs,he alternative was computing
   # several mutates and pivoting which was too painstaking
@@ -254,7 +278,7 @@ final_gt_model_table <- joined_xPts_Pts_modelxPts %>%
   tab_header(title = md("**English Premier League 2019/20 League Table**"),
              subtitle = "Comparing Pts vs xPts vs Model-xPts")
 
-saveRDS(final_gt_model_table, "soccer_model/final_gt_model_table.RDS")
+# saveRDS(final_gt_model_table, "soccer_model/final_gt_model_table.RDS")
 ```
 
 
