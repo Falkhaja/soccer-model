@@ -38,15 +38,34 @@ ui <- navbarPage(
              fluidPage(
                  titlePanel("Points Model Estimation"),
                  gt_output("tablePL")),
-             h3("xPts Discussion"),
+             h3("Table Interpretation"),
              p("The above table shows two alternative realities, or different 
-               modelling outcomes. The xPts outcome is based on comparing the
+               modelling outcomes. The first three columns (Pts Table, Pts, PPG)
+               where PPG is points per game and Points(Pts) is based off of the 
+               end of year outcomes for points gathered in the English Premier 
+               League. The second set of three columns (xPts Table, xPts, xPPG)
+               are based off of a metric called xPts. The third set of three 
+               columns (Model Table, Model Pts, Model PPG) are based off of a 
+               model generated output."),
+             h3("xPts Discussion"),
+             p("The xPts outcome is based on comparing the
                collected xG in a certain game and determining a winner based off
                of which team had a higher registered xG. The xG winner of a game
                receives 3 points, while the loser gets none. If the xG values
                are equal for both teams then they both get an xPts of 1.
-               This process was repeated for all 38 games for each team, and the
-               results were summarized in the table above."),
+               This process was repeated for all 38 games for each team
+               throughout the season, and the accumulated results were 
+               summarized in xPts columns above. It is obvious there is a 
+               discrepancy between what actually happened (the actual table) and
+               this xPts generated table. In general xG and xPts are not a perfect
+               model. However, over time these metrics give an accurate 
+               representation for how sustainable the performances of teams are,
+               in terms of xG and thus in terms of actual Pts and xPts. For
+               example, a team that generates a much higher xPts than their
+               actual Pts can serve as a prediction for teams that are expected
+               to do better in the future (perform closer to their xPts ) and
+               vice versa if a team is underperforming their xG and thus their
+               xPts they are bound to bounce back."),
              
              h2("Model Table and Analysis"),
              gt_output("tablePLmodel"),
@@ -57,7 +76,10 @@ ui <- navbarPage(
                each team. Here Arsenal for the Teams parameter and Away for the
                Home/Away parameter are the default values embedded in intercept,
                hence why they have blank values. The rest of the paramter values
-               are based off of it."),
+               are based off of it. The model output here that I generated using
+               the aforementioned parameters more closely resembles the actual
+               end of league table compared to that of the xPts generated table.
+               "),
     ),
     tabPanel("E(xG)pected Goals Model Study: Barcelona", 
              fluidPage(
@@ -73,6 +95,19 @@ ui <- navbarPage(
                                "xG & Shots Interaction" = "xG * Shots")
                          )),
                      mainPanel(plotOutput("model_plot")))),
+             h2("Understanding xG"),
+             p("xG is a metric used in the soccer world. It is a probabilistic
+               measure for the likelihood of a goal being scored based on a shot
+               taken and characteristics about that shot (location from goal,
+               proximity of other players, etc.). These values are collected by
+               people at Statsbomb such that every shot action has an associated
+               xG or likelihood of scoring. As it is a probabilistic measure,
+               there will be some discrepancy between the xG of a team (added up
+               throughout a game) and their actual number of goals scored.
+               The histogram here attempts to estimate the number of goals
+               actually scored based on shots taken and the xG garnered by the
+               Barcelona 14/15 team."),
+             
              h2("Model Table and Analysis"),
              gt_output("table1"),
              
@@ -84,6 +119,10 @@ ui <- navbarPage(
              season. This is an example of the type of model that can be
              made for other teams and estimates the likelihood of number of
              goals scored given the xG and number of shots in a game."),
+             p("All the histograms above (for all options) show similar results
+             in estimating between 2.5 and 3 goals scored per game irrespective
+             of the parameters selected. This is a specific case of Barcelona in
+             this season that set averages of 2.4 xG and 16.4 shots per game."),
     ),
     tabPanel("Player Tracking and Events", 
              fluidPage(
